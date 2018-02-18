@@ -24,7 +24,7 @@ module random_sreg #(parameter WIDTH = 32) (input clk, reset,
 endmodule
 
 
-module test();
+module random_sreg_test();
 	
 	reg clk, reset;
 	wire [31:0] n;
