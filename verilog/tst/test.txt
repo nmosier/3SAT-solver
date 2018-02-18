@@ -1,0 +1,11 @@
+// array of assignments for non-negated inputs, followed by array of assignments for negated inputs
+// assumes N=3, M=4
+100
+010
+001
+000
+
+001
+001
+000
+111
