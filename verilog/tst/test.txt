@@ -1,11 +1,15 @@
-// array of assignments for non-negated inputs, followed by array of assignments for negated inputs
-// assumes N=3, M=4
-100
-010
-001
-000
+{
+	{
+		3'b100,
+		3'b010,
+		3'b001,
+		3'b000
+	},
 
-001
-001
-000
-111
+	{
+		3'b001,
+		3'b001,
+		3'b000,
+		3'b111
+	}
+}

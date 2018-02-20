@@ -25,14 +25,29 @@ module PLA #(parameter N=3, M=4, FLIPS=8) (input clk, reset,
 
 endmodule
 
+/*
 module AND_array #(parameter N=3, M=4) (input [N-1:0] inputs,
+										input [N-1:0] array [M-1:0][1:0],
 									    output [M-1:0] clauses);
+	
+	wire [N-1:0] array_eval [M-1:0][1:0];
+	
+	genvar m;
+	generate
+		for (m=0; m<M; m=m+1)
+			begin
+				assign array_eval[m][1] = array[m][1] & inputs;
+				assign array_eval[m][0] = array[m][0] & ~inputs;
+				assign clauses[m] = (|array_eval[m][1]) | (|array_eval[m][0]);
+			end
+	endgenerate
+	
 	
 	wire [N-1:0] array_orig[M-1:0];
 	wire [N-1:0] array_inv[M-1:0];
 	
 	// generate static AND arrays
-	genvar n, m;
+	genvar m;
 	generate
 		for (m = 0; m < M; m = m + 1) begin
 			assign array_orig[m] = inputs | ({{(N-1){1'b1}}, 1'b0} << m);
@@ -44,16 +59,19 @@ module AND_array #(parameter N=3, M=4) (input [N-1:0] inputs,
 		end
 	endgenerate
 	
+	
 
 endmodule
+*/
 
-
-module OR_array #(parameter M=4) (input [M-1:0] clauses,
+/*
+module AND_array #(parameter M=4) (input [M-1:0] clauses,
 								   output val);
 								   
-		assign val = |clauses;
+		assign val = &clauses;
 								   
 endmodule
+*/
 
 
 
