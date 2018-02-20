@@ -7,13 +7,21 @@
 // -m: number of clauses
 
 
-module PLA #(parameter N=3, M=4) (input [N-1:0] inputs,
+module PLA #(parameter N=3, M=4, FLIPS=8) (input clk, reset,
+								           output values,
+								  		output [N-1:0] flip_mask,
 								  output out);
 	wire [M-1:0] clauses;
 	
+	wire [31:0] rand;
+	wire [31:0] rand_inputs;
+	wire [1:0] rand_flip;
+	
+	reg [log2(FLIPS)-1:0] flip_counter;
+	
 	AND_array #(N, M) and_array (inputs, clauses);
 	OR_array #(M) or_array (clauses, out);
-	
+	random_sreg #(32) rand_gen (clk, reset, rand);
 
 endmodule
 
