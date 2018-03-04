@@ -3,6 +3,9 @@
 
 `include "src/pla.v"
 `include "src/random.v"
+`include "src/rotator.v"
+`include "src/priority.v"
+`include "src/encoder.v"
 
 module schoening #(parameter N=32, M=4, FLIPS=8) (input clk, reset,
 				 output reg done,
@@ -32,11 +35,11 @@ module schoening #(parameter N=32, M=4, FLIPS=8) (input clk, reset,
 	
 	wire [31:0] rand;
 	wire [N-1:0] rand_inputs;
-	wire [log2(M)-1:0] rand_clause;
-	wire [log2(N)-1:0] rand_flip;
+	wire [log2c(M)-1:0] rand_clause;
+	wire [log2c(N)-1:0] rand_flip;
 	assign rand_inputs = rand[N-1:0];
-	assign rand_clause = rand[log2(M)-1:0];
-	assign rand_flip = rand[log2(M)+log2(N)-1:log2(M)];
+	assign rand_clause = rand[log2c(M)-1:0];
+	assign rand_flip = rand[log2c(M)+log2c(N)-1:log2c(M)];
 	
 	genvar i;
 	generate
@@ -50,7 +53,8 @@ module schoening #(parameter N=32, M=4, FLIPS=8) (input clk, reset,
 			end
 	endgenerate
 	
-	reg [log2(FLIPS)-1:0] flip_counter;
+	
+	reg [log2f(FLIPS):0] flip_counter;
 	
 	assign value = &clauses;
 	
@@ -58,12 +62,25 @@ module schoening #(parameter N=32, M=4, FLIPS=8) (input clk, reset,
 	
 	// flip logic
 	// 1. Random clause
+	//    (a) invert clauses
+	// 	  (b) rotate left by rand_clause
+	//    (c) take priority bit
+	//    (d) rotate right by rand_clause
+	// 2. Random clause member
+	//	  (e) encode clause
 	
+	wire [M-1:0] clauses_reg, clauses_inv, clauses_inv_rotated, clauses_inv_rotated_p, clauses_mask;
+	wire clauses_inv_rotated_p_none;
+	assign clauses_inv = ~clauses;
+	rotator #(M, 0) clauses_rleft (clauses_inv, rand_clause, clauses_inv_rotated);
+	priority_circuit #(M) clauses_priority (clauses_inv_rotated, 
+		clauses_inv_rotated_p, clauses_inv_rotated_p_none);
+	rotator #(M, 1) clauses_rright (clauses_inv_rotated_p, rand_clause, clauses_mask);
 			
 	always @(reset) begin
 		if (reset) begin
 			done = 0;
-			flip_counter = FLIPS;
+			flip_counter = 1;
 			inputs = rand_inputs;
 		end
 	end
@@ -81,7 +98,16 @@ module schoening #(parameter N=32, M=4, FLIPS=8) (input clk, reset,
 				end
 			else
 				begin
-					inputs = inputs ^ flip_mask;
+					// flip logic
+					// 1. Random clause
+					//    (a) invert clauses
+					// 	  (b) rotate left by rand_clause
+					//    (c) take priority bit
+					//    (d) rotate right by rand_clause
+					// 2. Random clause member
+					//	  (e) encode clause
+					//inputs = inputs ^ flip_mask;
+					$display("clauses_mask=%b", clauses_mask);
 					flip_counter = flip_counter - 1;
 				end
 		end
