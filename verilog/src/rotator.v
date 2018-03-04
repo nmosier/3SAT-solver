@@ -45,9 +45,3 @@ module rotator_wrapper #(parameter N=6, DIR=1) (input[N+log2c(N)-1:0] in,
 	rotator #(N, DIR) wrapped (in[N+log2c(N)-1:log2c(N)], in[log2c(N)-1:0], out);
 	
 endmodule
-
-`define CL_DUT rotator_wrapper
-`define CL_IN_WIDTH 9
-`define CL_OUT_WIDTH 6
-`define CL_TV "tst/rotator.tv"
-`include "inc/cl_testbench.v"
