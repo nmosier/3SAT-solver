@@ -25,13 +25,13 @@ module schoening #(parameter N=32, M=4, FLIPS=8) (input clk, reset,
 	wire [N-1:0] array [M-1:0][1:0];
 	wire [N-1:0] array_eval [M-1:0][1:0];
 	wire [N*M-1:0] array_orig, array_inv;
-	//wire [N-1:0] array_orig[M-1:0], array_inv[M-1:0];
-	assign array_orig = {4'b1000, 4'b1000, 4'b0010, 4'b0001};	// the Mth N-bit constant specifies which inputs considered in Mth clause
-	assign array_inv = {4'b0000, 4'b0000, 4'b0000, 4'b0000};	// the Mth N-bit constant specifies which inverted inputs considered in Mth clause
+	//assign array_orig = {4'b1000, 4'b1000, 4'b0010, 4'b0001};	// the Mth N-bit constant specifies which inputs considered in Mth clause
+	//assign array_inv = {4'b0000, 4'b0000, 4'b0000, 4'b0000};	// the Mth N-bit constant specifies which inverted inputs considered in Mth clause
+	assign array_orig = {4'b1100, 4'b0110, 4'b0011, 4'b0000, 4'b0000};
+	assign array_inv = {4'b0000, 4'b0000, 4'b0000, 4'b1000, 4'b0001};
 	
 	reg [N-1:0] inputs;
 	wire [M-1:0] clauses;
-	reg [N-1:0] flip_mask;	// need to come up with logic for this
 	wire value;
 	
 	wire [31:0] rand;
@@ -69,17 +69,32 @@ module schoening #(parameter N=32, M=4, FLIPS=8) (input clk, reset,
 	//    (c) take priority bit
 	//    (d) rotate right by rand_clause
 	wire [M-1:0] clauses_reg, clauses_inv, clauses_inv_rotated, clauses_inv_rotated_p, clauses_mask;
+	wire [log2c(M)-1:0] clauses_mask_encoded;
 	wire clauses_inv_rotated_p_none;
+	wire clauses_ignore;
 	assign clauses_inv = ~clauses;
 	rotator #(M, 0) clauses_rleft (clauses_inv, rand_clause, clauses_inv_rotated);
 	priority_circuit #(M) clauses_priority (clauses_inv_rotated, 
 		clauses_inv_rotated_p, clauses_inv_rotated_p_none);
 	rotator #(M, 1) clauses_rright (clauses_inv_rotated_p, rand_clause, clauses_mask);
+	encoder #(M) clauses_encoder (clauses_mask, clauses_mask_encoded, clauses_ignore); // clauses ignore should always be 0
 	
 	// 2. Random input within clause
-	//     (don't encode random clause--unnecessary extra hardware)
-	//    (a) AND 
-			
+	//    (a) fetch randomly selected clause def C, C_inv
+	//    (b) compute C xor C_inv
+	//    (b) rotate result left by rand_inputs
+	//    (c) take priority
+	//    (d) rotate right by rand_inputs
+	wire [N-1:0] clause_selected_def, clause_selected_def_inv,
+				 flippable_inputs, flippable_inputs_rotated, flippable_inputs_priority, flip_mask;
+	wire flippable_ignore;
+	assign clause_selected_def = array[clauses_mask_encoded][1];
+	assign clause_selected_def_inv = array[clauses_mask_encoded][0];
+	assign flippable_inputs = clause_selected_def ^ clause_selected_def_inv;
+	rotator #(N, 0) shift_flippable_rleft (flippable_inputs, rand_flip, flippable_inputs_rotated);
+	priority_circuit #(N) flip_priority (flippable_inputs_rotated, flippable_inputs_priority, flippable_ignore);
+	rotator #(N, 1) shift_flippable_rright (flippable_inputs_priority, rand_flip, flip_mask);
+		
 	always @(reset) begin
 		if (reset) begin
 			done = 0;
@@ -112,7 +127,8 @@ module schoening #(parameter N=32, M=4, FLIPS=8) (input clk, reset,
 					//    (b) lookup corresponding clause
 					//    (b) rotate left by rand_flip
 					//inputs = inputs ^ flip_mask;
-					//$display("clauses_mask=%b", clauses_mask);
+					$display("input=%b\tc_mask=%b\tf_mask=%b", inputs, clauses_mask, flip_mask);
+					inputs = inputs ^ flip_mask;
 					flip_counter = flip_counter - 1;
 				end
 		end
@@ -126,7 +142,7 @@ module schoening_test();
 	wire done;
 	wire [3:0] solution;
 	
-	schoening #(4, 4, 8) DUT (clk, reset, done, solution);
+	schoening #(4, 5, 8) DUT (clk, reset, done, solution);
 	
 	initial begin
 		clk = 0;
