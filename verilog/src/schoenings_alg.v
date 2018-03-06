@@ -25,8 +25,9 @@ module schoening #(parameter N=32, M=4, FLIPS=8) (input clk, reset,
 	wire [N-1:0] array [M-1:0][1:0];
 	wire [N-1:0] array_eval [M-1:0][1:0];
 	wire [N*M-1:0] array_orig, array_inv;
-	assign array_orig = {4'b1000, 4'b0100, 4'b0010, 4'b0001};
-	assign array_inv = {4'b0100, 4'b0010, 4'b0001, 4'b1000};
+	//wire [N-1:0] array_orig[M-1:0], array_inv[M-1:0];
+	assign array_orig = {4'b1000, 4'b1000, 4'b0010, 4'b0001};	// the Mth N-bit constant specifies which inputs considered in Mth clause
+	assign array_inv = {4'b0000, 4'b0000, 4'b0000, 4'b0000};	// the Mth N-bit constant specifies which inverted inputs considered in Mth clause
 	
 	reg [N-1:0] inputs;
 	wire [M-1:0] clauses;
@@ -41,6 +42,7 @@ module schoening #(parameter N=32, M=4, FLIPS=8) (input clk, reset,
 	assign rand_clause = rand[log2c(M)-1:0];
 	assign rand_flip = rand[log2c(M)+log2c(N)-1:log2c(M)];
 	
+	// logic for evaluating clauses
 	genvar i;
 	generate
 		for (i=0; i<M; i=i+1)
@@ -66,9 +68,6 @@ module schoening #(parameter N=32, M=4, FLIPS=8) (input clk, reset,
 	// 	  (b) rotate left by rand_clause
 	//    (c) take priority bit
 	//    (d) rotate right by rand_clause
-	// 2. Random clause member
-	//	  (e) encode clause
-	
 	wire [M-1:0] clauses_reg, clauses_inv, clauses_inv_rotated, clauses_inv_rotated_p, clauses_mask;
 	wire clauses_inv_rotated_p_none;
 	assign clauses_inv = ~clauses;
@@ -76,6 +75,10 @@ module schoening #(parameter N=32, M=4, FLIPS=8) (input clk, reset,
 	priority_circuit #(M) clauses_priority (clauses_inv_rotated, 
 		clauses_inv_rotated_p, clauses_inv_rotated_p_none);
 	rotator #(M, 1) clauses_rright (clauses_inv_rotated_p, rand_clause, clauses_mask);
+	
+	// 2. Random input within clause
+	//     (don't encode random clause--unnecessary extra hardware)
+	//    (a) AND 
 			
 	always @(reset) begin
 		if (reset) begin
@@ -105,9 +108,11 @@ module schoening #(parameter N=32, M=4, FLIPS=8) (input clk, reset,
 					//    (c) take priority bit
 					//    (d) rotate right by rand_clause
 					// 2. Random clause member
-					//	  (e) encode clause
+					//	  (a) encode clause
+					//    (b) lookup corresponding clause
+					//    (b) rotate left by rand_flip
 					//inputs = inputs ^ flip_mask;
-					$display("clauses_mask=%b", clauses_mask);
+					//$display("clauses_mask=%b", clauses_mask);
 					flip_counter = flip_counter - 1;
 				end
 		end
