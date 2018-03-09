@@ -13,7 +13,7 @@ module random_sreg #(parameter WIDTH = 32) (input clk, reset,
 	
 	always @(*) begin
 		if (reset)
-			seed = 33'b1101110111011101110111011101110111011101;
+			seed = 33'b101000010110001001110010001000110;
 	end
 	
 	always @(posedge clk) begin
