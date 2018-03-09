@@ -25,10 +25,11 @@ module schoening #(parameter N=32, M=4, FLIPS=8) (input clk, reset,
 	wire [N-1:0] array [M-1:0][1:0];
 	wire [N-1:0] array_eval [M-1:0][1:0];
 	wire [N*M-1:0] array_orig, array_inv;
-	//assign array_orig = {4'b1000, 4'b1000, 4'b0010, 4'b0001};	// the Mth N-bit constant specifies which inputs considered in Mth clause
-	//assign array_inv = {4'b0000, 4'b0000, 4'b0000, 4'b0000};	// the Mth N-bit constant specifies which inverted inputs considered in Mth clause
-	assign array_orig = {4'b1100, 4'b0110, 4'b0011, 4'b0000, 4'b0000};
-	assign array_inv = {4'b0000, 4'b0000, 4'b0000, 4'b1000, 4'b0001};
+	
+	// assign array_orig = {6'b100000, 6'b111000, 6'b000000, 6'b000110, 6'b000001};
+	// assign array_inv = {6'b000000, 6'b000000, 6'b100100, 6'b000000, 6'b000100};
+	assign array_orig = {6'b100000, 6'b111000, 6'b000000, 6'b000110, 6'b000001};
+	assign array_inv = {6'b000000, 6'b000000, 6'b100100, 6'b000000, 6'b000100};
 	
 	reg [N-1:0] inputs;
 	wire [M-1:0] clauses;
@@ -47,8 +48,8 @@ module schoening #(parameter N=32, M=4, FLIPS=8) (input clk, reset,
 	generate
 		for (i=0; i<M; i=i+1)
 			begin
-				assign array[i][1] = array_orig[i*N+M-1:i*N];
-				assign array[i][0] = array_inv[i*N+M-1:i*N];
+				assign array[i][1] = array_orig[i*N+N-1:i*N];
+				assign array[i][0] = array_inv[i*N+N-1:i*N];
 				assign array_eval[i][1] = array[i][1] & inputs;
 				assign array_eval[i][0] = array[i][0] & ~inputs;
 				assign clauses[i] = (|array_eval[i][1]) | (|array_eval[i][0]);
@@ -127,7 +128,7 @@ module schoening #(parameter N=32, M=4, FLIPS=8) (input clk, reset,
 					//    (b) lookup corresponding clause
 					//    (b) rotate left by rand_flip
 					//inputs = inputs ^ flip_mask;
-					$display("input=%b\tc_mask=%b\tf_mask=%b", inputs, clauses_mask, flip_mask);
+					//$display("input=%b\tc_mask=%b\tf_mask=%b\tflip_in=%b", inputs, clauses_mask, flip_mask, array[3'b011][1]);
 					inputs = inputs ^ flip_mask;
 					flip_counter = flip_counter - 1;
 				end
@@ -140,9 +141,9 @@ module schoening_test();
 
 	reg clk, reset;
 	wire done;
-	wire [3:0] solution;
+	wire [5:0] solution;
 	
-	schoening #(4, 5, 8) DUT (clk, reset, done, solution);
+	schoening #(6, 5, 8) DUT (clk, reset, done, solution);
 	
 	initial begin
 		clk = 0;
@@ -153,7 +154,6 @@ module schoening_test();
 	always begin
 		clk = 1; #5;
 		clk = 0; #5;
-		$display("input=%b", solution);
 	end
 	
 	always @(done) begin
